@@ -33,7 +33,7 @@ jobs:
         run: python CUP2PBI.py
 
       - name: Upload csv
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: clickup_tasks_csv
           path: clickup_tasks_full.csv
