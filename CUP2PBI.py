@@ -21,6 +21,10 @@ tasks_params = {
 }
 tasks_response = requests.get(tasks_url, headers=headers, params=tasks_params)
 tasks_data = tasks_response.json().get("tasks", [])
+print(f"API yanıt kodu: {tasks_response.status_code}")
+print(f"Yanıt içeriği: {tasks_response.text}")
+print(f"Toplam görev sayısı: {len(tasks_data)}")
+
 
 tasks_list = []
 
