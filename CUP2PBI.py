@@ -1,34 +1,39 @@
 import requests
 import os
-from dotenv import load_dotenv
 import pandas as pd
-from datetime import datetime, timedelta
 
-load_dotenv()
+# Yerel geliştirme ortamı için .env dosyasını yükle (GitHub Actions'da gerekmez)
+if os.getenv("GITHUB_ACTIONS") != "true":
+    from dotenv import load_dotenv
+    load_dotenv()
 
+# Ortam değişkenlerini al
 api_token = os.getenv("CLICKUP_API_TOKEN")
 team_id = os.getenv("TEAM_ID")
+output_path = os.getenv("OUTPUT_PATH", "clickup_tasks_full.csv")
 
 headers = {
     "Authorization": api_token
 }
 
-# 1. Get Tasks
+# 1. Görevleri al
 tasks_url = f"https://api.clickup.com/api/v2/team/{team_id}/task"
 tasks_params = {
     "archived": "false",
     "page": 0
 }
 tasks_response = requests.get(tasks_url, headers=headers, params=tasks_params)
-tasks_data = tasks_response.json().get("tasks", [])
-print(f"API yanıt kodu: {tasks_response.status_code}")
-print(f"Yanıt içeriği: {tasks_response.text}")
-print(f"Toplam görev sayısı: {len(tasks_data)}")
 
+# Hata kontrolü
+if not tasks_response.ok:
+    raise Exception(f"ClickUp API hatası: {tasks_response.status_code} - {tasks_response.text}")
+
+tasks_data = tasks_response.json().get("tasks", [])
+print(f"Toplam görev sayısı: {len(tasks_data)}")
 
 tasks_list = []
 
-# 2. Each task time entry
+# 2. Her görev için detayları topla
 for task in tasks_data:
     task_id = task.get("id")
     priority = task.get("priority")
@@ -36,15 +41,14 @@ for task in tasks_data:
     tags = [tag['name'] for tag in task.get('tags', [])]
     time_estimate = task.get('time_estimate', 'None')
     assignee = task["assignees"][0]["username"] if task.get("assignees") else "Unassigned"
-    
-    # Custom fields
+
+    # Özel alanlar
     custom_fields = {}
     for field in task.get('custom_fields', []):
         field_name = field.get('name', 'Unnamed Field')
         field_value = field.get('value', 'None')
         custom_fields[field_name] = field_value
 
-    # Task meta
     task_info = {
         "Task ID": task_id,
         "Name": task.get("name"),
@@ -68,7 +72,7 @@ for task in tasks_data:
 
     task_info.update(custom_fields)
 
-    # 3. Time entries
+    # 3. Zaman girişlerini al
     time_url = f"https://api.clickup.com/api/v2/task/{task_id}/time_entries"
     time_response = requests.get(time_url, headers=headers)
 
@@ -103,10 +107,8 @@ for task in tasks_data:
 
     tasks_list.append(task_info)
 
-# 4. CSV
+# 4. CSV'ye yaz
 df = pd.DataFrame(tasks_list)
-output_path = os.getenv("OUTPUT_PATH")
 df.to_csv(output_path, index=False)
- 
 
-print(f"\n✅ SUCCESS: {output_path}\n")
+print(f"\n✅ CSV başarıyla oluşturuldu: {output_path}\n")
