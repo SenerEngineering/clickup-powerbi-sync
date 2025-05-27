@@ -48,4 +48,5 @@ jobs:
 
       - name: Upload CSV to OneDrive
         run: |
-          rclone copy clickup_tasks_full.csv "onedrive:/PowerBI/" --progress
+          rclone copy clickup_tasks_full.csv "OneDrive CUP2PBI:/PowerBI/" --progress
+
