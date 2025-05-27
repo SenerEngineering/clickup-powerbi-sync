@@ -31,8 +31,21 @@ jobs:
       - name: Run Script
         run: python CUP2PBI.py
 
-      - name: Upload csv
+      - name: Upload csv as artifact
         uses: actions/upload-artifact@v4
         with:
           name: clickup_tasks_csv
           path: clickup_tasks_full.csv
+
+      - name: Install Rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+      - name: Setup Rclone config
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+
+      - name: Upload CSV to OneDrive
+        run: |
+          rclone copy clickup_tasks_full.csv "onedrive:/PowerBI/" --progress
